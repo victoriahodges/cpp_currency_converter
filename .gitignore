@@ -32,3 +32,4 @@
 *.app
 
 .vscode/
+API_KEY.txt
