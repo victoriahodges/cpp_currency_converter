@@ -6,18 +6,18 @@
 #include <json/json.h>
 
 size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp);
+bool isSetAPIKey(const char *env_var_name, std::string &api_key);
 bool performCurlRequest(const std::string &url, std::string &response);
 bool parseJsonResponse(const std::string &jsonResponse, Json::Value &parsedRoot);
 double convertCurrency(double &base_amount, double &rate);
 
 int main()
 {
+    std::string api_key;
     std::string response;
     double base_amount;
     double rate;
     double converted_amount;
-
-    const std::string CC_API_KEY = std::getenv("CC_API_KEY");
 
     const std::string BASE_CURRENCY = "GBP";
     const std::vector<std::string> CURRENCY_LIST = {"EUR", "CHF", "USD"};
@@ -32,40 +32,47 @@ int main()
     */
     // std::string api_url = "http://date.jsontest.com/";
 
-    std::string api_url = "https://api.currencyapi.com/v3/latest?apikey=" + CC_API_KEY + "&base_currency=" + BASE_CURRENCY;
 
-    std::cout << "Currency Converter Initialized" << std::endl;
-    std::cout << "==============================" << std::endl;
+    if (isSetAPIKey("CC_API_KEY", api_key)) {
+        std::cout << "Currency Converter Initialized" << std::endl;
+        std::cout << "==============================" << std::endl;
 
-    std::cout << "Enter the amount to convert (" << BASE_CURRENCY << "):" << std::endl;
-    std::cin >> base_amount;
+        std::cout << "Enter the amount to convert (" << BASE_CURRENCY << "):" << std::endl;
+        std::cin >> base_amount;
 
-    std::cout << "==============================" << std::endl;
+        std::cout << "==============================" << std::endl;
+ 
+        std::string api_url = "https://api.currencyapi.com/v3/latest?apikey=" + api_key + "&base_currency=" + BASE_CURRENCY;
+        curl_global_init(CURL_GLOBAL_DEFAULT);
 
-    curl_global_init(CURL_GLOBAL_DEFAULT);
-
-    if (performCurlRequest(api_url, response))
-    {
-        Json::Value root;
-        if (parseJsonResponse(response, root))
+        if (performCurlRequest(api_url, response))
         {
-            // TEST: std::cout << root << std::endl;
-            const Json::Value rates = root["data"];
-            const Json::Value last_update = root["meta"]["last_updated_at"];
-            std::cout << "Last updated: " << last_update << std::endl;
-            std::cout << base_amount << ' ' << BASE_CURRENCY << " returns: " << std::endl;
-            for (std::string curr : CURRENCY_LIST)
+            Json::Value root;
+            if (parseJsonResponse(response, root))
             {
-                rate = rates[curr]["value"].asDouble();
-                //TEST: rate = test_data.at(curr);
+                // TEST: std::cout << root << std::endl;
+                const Json::Value rates = root["data"];
+                const Json::Value last_update = root["meta"]["last_updated_at"];
+                std::cout << "Last updated: " << last_update << std::endl;
+                std::cout << base_amount << ' ' << BASE_CURRENCY << " returns: " << std::endl;
+                for (std::string curr : CURRENCY_LIST)
+                {
+                    rate = rates[curr]["value"].asDouble();
+                    //TEST: rate = test_data.at(curr);
 
-                converted_amount = convertCurrency(base_amount, rate);
-                std::cout << "  " << converted_amount << ' ' << curr << std::endl;
+                    converted_amount = convertCurrency(base_amount, rate);
+                    std::cout << "  " << converted_amount << ' ' << curr << std::endl;
+                }
             }
         }
-    }
 
-    curl_global_cleanup();
+        curl_global_cleanup();
+    }
+    else {
+        std::cout << "------------- ERROR! -------------" << std::endl;
+        std::cout << "Currency Converter API key not set" << std::endl;
+        std::cout << "----------------------------------" << std::endl;
+    }
     return 0;
 }
 
@@ -73,6 +80,14 @@ size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
 {
     ((std::string *)userp)->append((char *)contents, size * nmemb);
     return size * nmemb;
+}
+
+bool isSetAPIKey(const char *env_var_name, std::string &api_key){
+    if (const char *env_p = std::getenv(env_var_name)) {
+        api_key = env_p;
+        return true;
+    }
+    return false;
 }
 
 bool performCurlRequest(const std::string &url, std::string &response)
