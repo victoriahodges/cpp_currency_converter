@@ -3,20 +3,38 @@
 // https://medium.com/@crud-boy/how-to-use-sqlite-sdk-in-c-c-62fb47766d20
 
 // Create the database tables
-bool createDatabase(const std::string &sql)
+bool createCurrencyDatabase(const std::vector<std::string> &currencies)
 {
-    bool creation_successful = false;
-    sqlite3 *db = openDB("../data/test.db");
+    sqlite3 *db = openDB("../data/currency.db");
     if (db != nullptr)
     {
+        std::string sql =
+            "CREATE TABLE IF NOT EXISTS currency_data ("
+            "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+            "datetime DATETIME NOT NULL, "
+            "base_currency TEXT NOT NULL, ";
+        // 2. Create table columns for each currency name
+        for (std::string curr : currencies)
+        {
+            sql += curr + " REAL NOT NULL, ";
+        }
+        // remove last comma and space
+        sql.erase(sql.length() - 2, 2);
+        sql += ");";
+        
         if (!createTable(db, sql))
         {
             std::cerr << "Failed to create table." << std::endl;
-            creation_successful = false;
+            return false;
         }
         closeDB(db);
     }
-    return creation_successful;
+    return true;
+}
+
+// Update the database
+bool updateCurrencyDatabase() {
+    return true;
 }
 
 // Function to open a database and return its handle
@@ -49,6 +67,20 @@ bool createTable(sqlite3 *db, const std::string &sql)
         sqlite3_free(errorMsg);
         return false;
     }
-    // std::cout << "Table created successfully." << std::endl;
+    std::cout << "Table created successfully." << std::endl;
     return true;
+}
+
+// Insert data into the database
+bool insertData(sqlite3 *db, const std::string& sql) {
+    sqlite3_stmt *preparedStatement = nullptr;
+    
+    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &preparedStatement, nullptr) == SQLITE_OK) {
+        if (sqlite3_step(preparedStatement) == SQLITE_DONE) {
+            sqlite3_finalize(preparedStatement);
+            return true;
+        }
+    }
+    sqlite3_finalize(preparedStatement);
+    return false;
 }

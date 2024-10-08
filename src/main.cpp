@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <vector>
 
 #include "../include/api.h"
 #include "../include/database.h"
@@ -21,6 +22,12 @@ int main()
     const std::string BASE_CURRENCY = "GBP";
     const std::vector<std::string> CURRENCY_LIST = {"EUR", "CHF", "USD"};
     // const std::vector<std::string> CURRENCY_LIST = {};
+
+    // ----- Set up database and tables -----
+    if (!createCurrencyDatabase(CURRENCY_LIST))
+    {
+        return 0;
+    }
 
     // ----- Check API Key is set -----
     if (!isSetAPIKey("CC_API_KEY", api_key))
@@ -65,40 +72,13 @@ int main()
     {
         const Json::Value rates = root["data"];
         const Json::Value last_update = root["meta"]["last_updated_at"];
-        std::vector<std::string> currencies;
-        if (CURRENCY_LIST.size() > 0)
-        {
-            currencies = CURRENCY_LIST;
-        }
-        else
-        {
-            // Fetch all currencies
-            currencies = rates.getMemberNames();
-        }
-
-        // 1. Set up database and tables, if none exists
-        std::string sql =
-            "CREATE TABLE IF NOT EXISTS currency_data ("
-            "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-            "datetime DATETIME NOT NULL, ";
-        "base_currency TEXT NOT NULL, ";
-        // 2. Create table columns for each currency name
-        for (std::string curr : currencies)
-        {
-            sql += curr + " REAL NOT NULL, ";
-        }
-        // remove last comma and space
-        sql.erase(sql.length() - 2, 2);
-        sql += ");";
-
-        createDatabase(sql);
         // TODO:
         // 3. Populate rows for each timestamp since last updated, if time > 24hrs since last fetch
 
         // ----- Print converted currency data -----
         std::cout << "Last updated: " << last_update << std::endl;
         std::cout << base_amount << ' ' << BASE_CURRENCY << " returns: " << std::endl;
-        for (std::string curr : currencies)
+        for (std::string curr : CURRENCY_LIST)
         {
             rate = rates[curr]["value"].asDouble();
             converted_amount = convertCurrency(base_amount, rate);
