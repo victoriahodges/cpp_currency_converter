@@ -7,11 +7,11 @@ CC = g++
 #  -O2		- turns on optimization flags
 #  -l...  - library dependencies
 #  -I...	- include folders 
-CFLAGS  = -g -Wall -O2 -lcurl -ljsoncpp -lsqlite3 -I../include
+CFLAGS  = -g -Wall -O2 -lcurl -ljsoncpp -lsqlite3 -I../include -I../data
 
 # Target and dependencies
 TARGET = main
-OBJS   = main.o ../include/api.o
+OBJS   = main.o ../include/api.o ../include/database.o
 
 # Build and run 
 all: $(TARGET)

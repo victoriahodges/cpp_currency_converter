@@ -3,7 +3,7 @@
 #include <string>
 
 #include "../include/api.h"
-// #include "../include/database.h"
+#include "../include/database.h"
 
 double convertCurrency(double &base_amount, double &rate);
 void error_message(std::string err_msg);
@@ -66,22 +66,34 @@ int main()
         const Json::Value rates = root["data"];
         const Json::Value last_update = root["meta"]["last_updated_at"];
         std::vector<std::string> currencies;
-
-        // TODO:
-
-        // 1. Set up database and tables, if none exists
-        // DAILY UPDATES
-        // 2. Create table columns for each currency name
-        // 3. Populate rows for each timestamp since last updated, if time > 24hrs since last fetch
-
         if (CURRENCY_LIST.size() > 0)
         {
             currencies = CURRENCY_LIST;
         }
         else
         {
+            // Fetch all currencies
             currencies = rates.getMemberNames();
         }
+
+        // 1. Set up database and tables, if none exists
+        std::string sql =
+            "CREATE TABLE IF NOT EXISTS currency_data ("
+            "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+            "datetime DATETIME NOT NULL, ";
+        "base_currency TEXT NOT NULL, ";
+        // 2. Create table columns for each currency name
+        for (std::string curr : currencies)
+        {
+            sql += curr + " REAL NOT NULL, ";
+        }
+        // remove last comma and space
+        sql.erase(sql.length() - 2, 2);
+        sql += ");";
+
+        createDatabase(sql);
+        // TODO:
+        // 3. Populate rows for each timestamp since last updated, if time > 24hrs since last fetch
 
         // ----- Print converted currency data -----
         std::cout << "Last updated: " << last_update << std::endl;
