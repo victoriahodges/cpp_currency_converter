@@ -1,19 +1,25 @@
 #include "api.h"
 
-size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
+// Check if API key is set as environment variable
+bool isSetAPIKey(const char *env_var_name, std::string &api_key)
 {
-    ((std::string *)userp)->append((char *)contents, size * nmemb);
-    return size * nmemb;
-}
-
-bool isSetAPIKey(const char *env_var_name, std::string &api_key){
-    if (const char *env_p = std::getenv(env_var_name)) {
+    if (const char *env_p = std::getenv(env_var_name))
+    {
         api_key = env_p;
         return true;
     }
     return false;
 }
 
+// https://tradermade.com/tutorials/how-to-build-your-first-cpp-rest-api-client
+// WriteCallback function handles data retrieved from a web request with the help of curl library
+size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
+{
+    ((std::string *)userp)->append((char *)contents, size * nmemb);
+    return size * nmemb;
+}
+
+// Uses the libcurl library to get data from a URL
 bool performCurlRequest(const std::string &url, std::string &response)
 {
     CURL *curl = curl_easy_init();
@@ -39,6 +45,7 @@ bool performCurlRequest(const std::string &url, std::string &response)
     return true;
 }
 
+// uses the JsonCpp library to try parsing a JSON response provided as a string
 bool parseJsonResponse(const std::string &jsonResponse, Json::Value &parsedRoot)
 {
     Json::CharReaderBuilder builder;
