@@ -17,6 +17,7 @@ int main()
     std::string response;
     double base_amount;
     double rate;
+    std::string rate_sql_values;
     double converted_amount;
 
     const std::string BASE_CURRENCY = "GBP";
@@ -42,6 +43,11 @@ int main()
     std::cout << "Enter the amount to convert (" << BASE_CURRENCY << "):" << std::endl;
     std::cin >> base_amount;
     std::cout << "==============================" << std::endl;
+
+    // TODO - Check DB to save on API calls, if latest values need fetching.
+    // if (time_now - last_db_row_timestamp > 24hrs), then update
+    // else if call to API fails (ie: off-line)
+    // use DB values
 
     // ----- Call API -----
     if (is_test_mode) // to save on API calls
@@ -72,18 +78,21 @@ int main()
     {
         const Json::Value rates = root["data"];
         const Json::Value last_update = root["meta"]["last_updated_at"];
-        // TODO:
-        // 3. Populate rows for each timestamp since last updated, if time > 24hrs since last fetch
 
         // ----- Print converted currency data -----
         std::cout << "Last updated: " << last_update << std::endl;
         std::cout << base_amount << ' ' << BASE_CURRENCY << " returns: " << std::endl;
-        for (std::string curr : CURRENCY_LIST)
+        for (auto curr : CURRENCY_LIST)
         {
             rate = rates[curr]["value"].asDouble();
+            rate_sql_values += rates[curr]["value"].asString() + ", ";
+
+            // Output converted values
             converted_amount = convertCurrency(base_amount, rate);
             std::cout << "  " << converted_amount << ' ' << curr << std::endl;
         }
+        // Populate database with latest values
+        updateCurrencyDatabase(last_update.asString(), BASE_CURRENCY, rate_sql_values);
     }
 
     return 0;

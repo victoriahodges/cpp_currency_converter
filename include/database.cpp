@@ -21,7 +21,7 @@ bool createCurrencyDatabase(const std::vector<std::string> &currencies)
         // remove last comma and space
         sql.erase(sql.length() - 2, 2);
         sql += ");";
-        
+
         if (!createTable(db, sql))
         {
             std::cerr << "Failed to create table." << std::endl;
@@ -33,7 +33,39 @@ bool createCurrencyDatabase(const std::vector<std::string> &currencies)
 }
 
 // Update the database
-bool updateCurrencyDatabase() {
+bool updateCurrencyDatabase(const std::string &last_update, const std::string base_currency, const std::string values)
+{
+    sqlite3 *db = openDB("../data/currency.db");
+    if (db != nullptr)
+    {
+        // Insert records
+        bool insert_successful = true;
+
+        std::string sql =
+            "INSERT INTO currency_data("
+            "datetime, base_currency, EUR, CHF, USD) "
+            "VALUES('" +
+            last_update + "', '" + base_currency + "', " + values;
+        sql.erase(sql.length() - 2, 2);
+        sql += ");";
+
+        insert_successful &= insertData(db, sql);
+
+        if (insert_successful)
+        {
+            std::cout << "Data insertion complete." << std::endl;
+        }
+        else
+        {
+            std::cerr << "Data insertion failed." << std::endl;
+        }
+
+        closeDB(db);
+    }
+    else
+    {
+        std::cerr << "Failed to open database." << std::endl;
+    }
     return true;
 }
 
@@ -72,11 +104,14 @@ bool createTable(sqlite3 *db, const std::string &sql)
 }
 
 // Insert data into the database
-bool insertData(sqlite3 *db, const std::string& sql) {
+bool insertData(sqlite3 *db, const std::string &sql)
+{
     sqlite3_stmt *preparedStatement = nullptr;
-    
-    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &preparedStatement, nullptr) == SQLITE_OK) {
-        if (sqlite3_step(preparedStatement) == SQLITE_DONE) {
+
+    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &preparedStatement, nullptr) == SQLITE_OK)
+    {
+        if (sqlite3_step(preparedStatement) == SQLITE_DONE)
+        {
             sqlite3_finalize(preparedStatement);
             return true;
         }
